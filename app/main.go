@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -33,11 +34,36 @@ func main() {
 func handleConnection(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 	defer conn.Close()
+
+	tokens := []string{}
+	var argsCount int64 = 0
 	for scanner.Scan() {
 		text := scanner.Text()
 
-		if strings.TrimSpace(text) == "PING" {
+		if strings.HasPrefix(text, "*") {
+			i, err := strconv.ParseInt(strings.TrimPrefix(text, "*"), 10, 64)
+			if err != nil {
+				fmt.Printf("Unable to convert string to int: %v\n", err)
+			}
+			argsCount = i
+		}
+
+		for range argsCount {
+			scanner.Scan()
+			scanner.Scan()
+			text := scanner.Text()
+			tokens = append(tokens, text)
+		}
+
+		command := tokens[0]
+
+		if command == "PING" {
 			conn.Write([]byte("+PONG\r\n"))
 		}
+		if command == "ECHO" {
+			conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(tokens[1]), tokens[1]))
+		}
+
+		tokens = []string{}
 	}
 }
