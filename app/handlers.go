@@ -169,3 +169,27 @@ func handleLLen(conn net.Conn, args []string) {
 	}
 	conn.Write(fmt.Appendf([]byte{}, ":%d\r\n", len(slice)))
 }
+
+func handleLPop(conn net.Conn, args []string) {
+	key := args[0]
+	content, exists := Data[key]
+	if !exists {
+		conn.Write([]byte("$-1\r\n"))
+		return
+	}
+
+	slice, ok := content.([]string)
+	if !ok {
+		fmt.Println("Unable to convert value to string slice")
+		conn.Write([]byte("+Invalid datatype\r\n"))
+		return
+	}
+	if len(slice) == 0 {
+		conn.Write([]byte("$-1\r\n"))
+		return
+	}
+
+	toPop := slice[0]
+	Data[key] = slice[1:]
+	conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(toPop), toPop))
+}

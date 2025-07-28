@@ -60,5 +60,8 @@ func handleConnection(conn net.Conn) {
 		if command == "LLEN" {
 			handleLLen(conn, args)
 		}
+		if command == "LPOP" {
+			handleLPop(conn, args)
+		}
 	}
 }
