@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 )
+
+var data = map[string]string{}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -35,35 +35,29 @@ func handleConnection(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 	defer conn.Close()
 
-	tokens := []string{}
-	var argsCount int64 = 0
 	for scanner.Scan() {
-		text := scanner.Text()
-
-		if strings.HasPrefix(text, "*") {
-			i, err := strconv.ParseInt(strings.TrimPrefix(text, "*"), 10, 64)
-			if err != nil {
-				fmt.Printf("Unable to convert string to int: %v\n", err)
-			}
-			argsCount = i
-		}
-
-		for range argsCount {
-			scanner.Scan()
-			scanner.Scan()
-			text := scanner.Text()
-			tokens = append(tokens, text)
-		}
-
-		command := tokens[0]
+		command, args := parseCommands(scanner)
 
 		if command == "PING" {
 			conn.Write([]byte("+PONG\r\n"))
 		}
 		if command == "ECHO" {
-			conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(tokens[1]), tokens[1]))
+			conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(args[0]), args[0]))
 		}
+		if command == "SET" {
+			key, value := args[0], args[1]
+			data[key] = value
+			conn.Write([]byte("+OK\r\n"))
+		}
+		if command == "GET" {
+			key := args[0]
+			value, exists := data[key]
 
-		tokens = []string{}
+			if exists {
+				conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(value), value))
+			} else {
+				conn.Write([]byte("$-1\r\n"))
+			}
+		}
 	}
 }
