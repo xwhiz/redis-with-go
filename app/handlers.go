@@ -121,14 +121,7 @@ func handleLRange(conn net.Conn, args []string) {
 	if int(high) >= len(slice) {
 		high = int64(len(slice) - 1)
 	}
-
-	output := ""
-	count := 0
-	for i := low; i <= high; i++ {
-		output = fmt.Sprintf("%s$%d\r\n%s\r\n", output, len(slice[i]), slice[i])
-		count += 1
-	}
-	conn.Write([]byte(fmt.Sprintf("*%d\r\n%s", count, output)))
+	conn.Write(getRespString(slice, int(low), int(high)))
 }
 
 func handleLPush(conn net.Conn, args []string) {
@@ -189,7 +182,25 @@ func handleLPop(conn net.Conn, args []string) {
 		return
 	}
 
-	toPop := slice[0]
-	Data[key] = slice[1:]
-	conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(toPop), toPop))
+	popCount := 1
+	if len(args) > 1 {
+		n, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			fmt.Println("Unable to convert number to int")
+		}
+		popCount = int(n)
+	} else {
+		toPop := slice[0]
+		Data[key] = slice[1:]
+		conn.Write(fmt.Appendf([]byte{}, "$%d\r\n%s\r\n", len(toPop), toPop))
+		return
+	}
+
+	if popCount >= len(slice) {
+		popCount = len(slice)
+	}
+
+	toPop := slice[0:popCount]
+	Data[key] = slice[popCount:]
+	conn.Write(getRespString(toPop, 0, len(toPop)-1))
 }
