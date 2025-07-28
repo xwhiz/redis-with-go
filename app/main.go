@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var data = map[string]string{}
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
-
-	// Uncomment this block to pass the first stage
 
 	l, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -48,6 +49,22 @@ func handleConnection(conn net.Conn) {
 			key, value := args[0], args[1]
 			data[key] = value
 			conn.Write([]byte("+OK\r\n"))
+
+			for index, arg := range args {
+				if strings.ToLower(arg) != "px" {
+					continue
+				}
+
+				sleepDuration, err := strconv.ParseInt(args[index+1], 10, 64)
+				if err != nil {
+					fmt.Println("Cannot parse to int:", args[index+1])
+					continue
+				}
+				go func() {
+					time.Sleep(time.Millisecond * time.Duration(sleepDuration))
+					delete(data, key)
+				}()
+			}
 		}
 		if command == "GET" {
 			key := args[0]
