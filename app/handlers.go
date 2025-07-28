@@ -130,3 +130,25 @@ func handleLRange(conn net.Conn, args []string) {
 	}
 	conn.Write([]byte(fmt.Sprintf("*%d\r\n%s", count, output)))
 }
+
+func handleLPush(conn net.Conn, args []string) {
+	key := args[0]
+
+	values, exists := Data[key]
+	slice := []string{}
+	if exists {
+		s, ok := values.([]string)
+		if !ok {
+			fmt.Println("Unable to convert value to string slice")
+			conn.Write([]byte("+Invalid datatype\r\n"))
+			return
+		}
+		slice = s
+	}
+
+	for i := 1; i < len(args); i++ {
+		slice = append([]string{args[i]}, slice...)
+	}
+	Data[key] = slice
+	conn.Write(fmt.Appendf([]byte{}, ":%d\r\n", len(slice)))
+}
