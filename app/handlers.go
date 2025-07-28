@@ -152,3 +152,20 @@ func handleLPush(conn net.Conn, args []string) {
 	Data[key] = slice
 	conn.Write(fmt.Appendf([]byte{}, ":%d\r\n", len(slice)))
 }
+
+func handleLLen(conn net.Conn, args []string) {
+	key := args[0]
+	content, exists := Data[key]
+	if !exists {
+		conn.Write([]byte(":0\r\n"))
+		return
+	}
+
+	slice, ok := content.([]string)
+	if !ok {
+		fmt.Println("Unable to convert value to string slice")
+		conn.Write([]byte("+Invalid datatype\r\n"))
+		return
+	}
+	conn.Write(fmt.Appendf([]byte{}, ":%d\r\n", len(slice)))
+}

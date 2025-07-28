@@ -57,5 +57,8 @@ func handleConnection(conn net.Conn) {
 		if command == "LPUSH" {
 			handleLPush(conn, args)
 		}
+		if command == "LLEN" {
+			handleLLen(conn, args)
+		}
 	}
 }
