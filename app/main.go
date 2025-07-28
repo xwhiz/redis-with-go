@@ -26,16 +26,18 @@ func main() {
 			continue
 		}
 
-		go func(conn net.Conn) {
-			scanner := bufio.NewScanner(conn)
-			defer conn.Close()
-			for scanner.Scan() {
-				text := scanner.Text()
+		go handleConnection(conn)
+	}
+}
 
-				if strings.TrimSpace(text) == "PING" {
-					conn.Write([]byte("+PONG\r\n"))
-				}
-			}
-		}(conn)
+func handleConnection(conn net.Conn) {
+	scanner := bufio.NewScanner(conn)
+	defer conn.Close()
+	for scanner.Scan() {
+		text := scanner.Text()
+
+		if strings.TrimSpace(text) == "PING" {
+			conn.Write([]byte("+PONG\r\n"))
+		}
 	}
 }
