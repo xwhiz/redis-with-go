@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/xwhiz/redis-with-go/data"
 )
 
 func main() {
@@ -45,9 +47,6 @@ func handleConnection(conn net.Conn) {
 		}
 		if command == "GET" {
 			handleGetKey(conn, args)
-		}
-		if command == "RPUSH" {
-			handleRPush(conn, args)
 		}
 	}
 }
