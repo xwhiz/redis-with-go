@@ -100,6 +100,20 @@ func handleLRange(conn net.Conn, args []string) {
 		return
 	}
 
+	if -low >= int64(len(slice)) {
+		low = 0
+	}
+	if -high >= int64(len(slice)) {
+		high = 0
+	}
+
+	if low < 0 {
+		low = int64(len(slice)) + low
+	}
+	if high < 0 {
+		high = int64(len(slice)) + high
+	}
+
 	if int(low) >= len(slice) || low > high {
 		conn.Write([]byte("*0\r\n"))
 		return
