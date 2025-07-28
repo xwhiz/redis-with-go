@@ -51,5 +51,8 @@ func handleConnection(conn net.Conn) {
 		if command == "RPUSH" {
 			handleRPush(conn, args)
 		}
+		if command == "LRANGE" {
+			handleLRange(conn, args)
+		}
 	}
 }

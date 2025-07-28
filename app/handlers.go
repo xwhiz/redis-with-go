@@ -19,7 +19,6 @@ func handleSetKey(conn net.Conn, args []string) {
 		}
 
 		sleepDuration, err := strconv.ParseInt(args[index+1], 10, 64)
-		fmt.Printf("Sleeping %d for key: %v\n", sleepDuration, key)
 		if err != nil {
 			fmt.Println("Cannot parse to int:", args[index+1])
 			continue
@@ -54,12 +53,8 @@ func handleRPush(conn net.Conn, args []string) {
 	value, exists := Data[key]
 	slice := []string{}
 
-	fmt.Println(Data, key, value, exists)
-
 	if exists {
 		s, ok := value.([]string)
-
-		fmt.Println("this thing exists", s)
 
 		if !ok {
 			fmt.Println("Something went wrong")
@@ -69,11 +64,55 @@ func handleRPush(conn net.Conn, args []string) {
 			slice = append(slice, item)
 		}
 	}
-	fmt.Println(slice)
 	for i := 1; i < len(args); i++ {
 		slice = append(slice, args[i])
 	}
-	fmt.Println(slice)
 	Data[key] = slice
 	conn.Write(fmt.Appendf([]byte{}, ":%d\r\n", len(slice)))
+}
+
+func handleLRange(conn net.Conn, args []string) {
+	key := args[0]
+	low, err := strconv.ParseInt(args[1], 10, 64)
+
+	if err != nil {
+		fmt.Println("Cannot parse to int:", args[1])
+		conn.Write(fmt.Appendf([]byte{}, "Cannot parse to int: %v\r\t", args[1]))
+		return
+	}
+	high, err := strconv.ParseInt(args[2], 10, 64)
+	if err != nil {
+		fmt.Println("Cannot parse to int:", args[2])
+		conn.Write(fmt.Appendf([]byte{}, "Cannot parse to int: %v\r\t", args[2]))
+		return
+	}
+
+	value, exists := Data[key]
+
+	if !exists {
+		conn.Write([]byte("*0\r\n"))
+		return
+	}
+
+	slice, ok := value.([]string)
+	if !ok {
+		conn.Write([]byte("+Invalid datatype\r\n"))
+		return
+	}
+
+	if int(low) >= len(slice) || low > high {
+		conn.Write([]byte("*0\r\n"))
+		return
+	}
+	if int(high) >= len(slice) {
+		high = int64(len(slice) - 1)
+	}
+
+	output := ""
+	count := 0
+	for i := low; i <= high; i++ {
+		output = fmt.Sprintf("%s$%d\r\n%s\r\n", output, len(slice[i]), slice[i])
+		count += 1
+	}
+	conn.Write([]byte(fmt.Sprintf("*%d\r\n%s", count, output)))
 }
